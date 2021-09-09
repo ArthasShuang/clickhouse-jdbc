@@ -12,7 +12,6 @@ import ru.yandex.clickhouse.domain.ClickHouseDataType;
  * @author Dmitry Andreev <a href="mailto:AndreevDm@yandex-team.ru"></a>
  */
 public class ClickHouseArray implements Array {
-
     private ClickHouseDataType elementType;
     private Object array;
 
@@ -52,17 +51,44 @@ public class ClickHouseArray implements Array {
 
     @Override
     public Object getArray(long index, int count) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        return getArray(index, count, null);
     }
 
     @Override
     public Object getArray(long index, int count, Map<String, Class<?>> map) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        if (map != null && !map.isEmpty()) {
+            throw new SQLFeatureNotSupportedException("The map is not empty!");
+        }
+
+        if (index < 1) {
+            throw new SQLFeatureNotSupportedException(String.format("The array index is out of range: %d", index));
+        }
+
+
+        if (count == 0) {
+            count = ((Object[]) array).length;
+        }
+
+        // array index out of range
+        if ((--index) + count > ((Object[]) array).length) {
+            throw new SQLFeatureNotSupportedException(String.format("The array index is out of range: %d, number of elements: %d.",
+                            index + count, ((Object[]) array).length));
+        }
+
+        return subArray(array, (int) index, count);
+    }
+
+    private Object subArray(Object array, int index, int count) {
+        Object[] transArray = (Object[]) array;
+        Object[] resultArray = new Object[count];
+        if (count >= 0) {System.arraycopy(transArray, index, resultArray, 0, count);}
+        return resultArray;
     }
 
     @Override
     public ResultSet getResultSet() throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        System.out.printf("getResultSet().array: %s, elementType: %s%n", array.toString(), elementType.toString());
+        throw new SQLFeatureNotSupportedException(String.format("getResultSet().array: %s, elementType: %s%n", array.toString(), elementType.toString()));
     }
 
     @Override
